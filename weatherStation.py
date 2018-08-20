@@ -8,6 +8,11 @@ import tkFont
 import ImageTk
 import RPi.GPIO as GPIO
 
+from weather import Weather, Unit
+
+weather = Weather(unit=Unit.CELSIUS)
+
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(40, GPIO.OUT)
 GPIO.output(40, GPIO.HIGH)
@@ -25,15 +30,27 @@ temperature.set("----"+" °C")
 humidity = StringVar()
 humidity.set("----"+" %")
 
-temperatureLabel = Label(root, fg="white", background="#00dbde",
-                         textvariable=temperature, font=("Helvetica", 40, "bold"))
-temperatureLabel.place(x=580, y=100)
+yahooTemp = StringVar()
+yahooTemp.set("----"+ " °C")
 
-humidityLabel = Label(root, fg="white", background="#00dbde",
-                      textvariable=humidity, font=("Helvetica", 40, "bold"))
-humidityLabel.place(x=580, y=200)
+yahooCondition = StringVar()
+yahooCondition.set("Condition: ----")
+
+temperatureLabel = Label(root, fg="white", background="#00dbde", textvariable=temperature, font=("Helvetica", 20, "bold"))
+temperatureLabel.place(x=300, y=100)
+
+humidityLabel = Label(root, fg="white", background="#00dbde", textvariable=humidity, font=("Helvetica", 20, "bold"))
+humidityLabel.place(x=300, y=150)
+
+yahooTempLabel = Label(root, fg="white", background="#00dbde", textvariable=yahooTemp, font=("Helvetica", 25, "bold"))
+yahooTempLabel.place(x=0, y=100)
+
+yahooConditionLabel = Label(root, fg="white", background="#00dbde", textvariable=yahooCondition, font=("Helvetica", 25, "bold"))
+
+yahooConditionLabel.place(x=0, y=150)
 
 root.attributes("-fullscreen", True)
+
 root.bind("<1>", exit)
 
 
@@ -48,10 +65,16 @@ def readSensor():
     temperature.set(temp+" °C")
     hum = "%.1f" % h
     humidity.set(hum+"  %")
-    print(temp+" °C")
-        print(hum+"  %")
+    print('Room => temp: {} humidity: {}').format(temp, humidity.get())
 
+def getWeatherFromYahoo():
+    root.after(900000, getWeatherFromYahoo)
+    location = weather.lookup_by_location('montreal') 
+    condition = location.condition
+    yahooTemp.set(condition.temp.encode('ascii', 'ignore')+" °C")
+    yahooCondition.set(condition.text.encode('ascii', 'ignore'))
+    print("Yahoo => temp: {} condition: {}").format(condition.temp, condition.text)
 
 root.after(2000, readSensor)
-
+root.after(2000, getWeatherFromYahoo)
 root.mainloop()
